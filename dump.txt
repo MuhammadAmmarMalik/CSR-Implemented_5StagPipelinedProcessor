@@ -1,0 +1,310 @@
+00800413  //| addi x8, x0, 8
+30041073  //| csrrw x0, x8, (768 = 0x300)
+00880437  //| lui  x8, 0x00880
+00c45413  //| srli x8, x8, 12 (0x00000880)
+30441073  //| csrrw x0, x8, (772 = 0x304)
+03C00413  //| addi x8, x0, 60 = 15*4 0x3c=60
+30541073  //| csrrw x0, x8, (776 = 0x305)
+00628433  //| Program instruction | add x8,x5, x6
+40328433  //| Program instruction | sub x8,x5, x3
+00121433  //| Program instruction | sll x8,x4,x1
+00322433  //| Program instruction | slt x8,x4,x3
+00323433  //| Program instruction | sltu x8,x4,x3
+0010c433  //| Program instruction | xor x8, x1,x1
+0022d433  //| Program instruction | srl x8, x5,x2
+000283EF  //| End of progrma      | simple jum to the end of program
+00000000  //| MTVEC Address       | instruction no. 16
+0140046f  //|base address + 4 (jump will lead to timer interrupt service routine) | jump to CSR jal x8, 20 | instruction no 17
+00628433  //| Program instruction | add x8,x5, x6
+40328433  //| Program instruction | sub x8,x5, x3
+00121433  //| Program instruction | sll x8,x4,x1
+00322433  //| Program instruction | slt x8,x4,x3
+0020e433  //| timer interrupt service routine | instruction no. 22
+30200073  //| MRET statement
+
+
+1. Setting the mstatus register -- mie = mstatus[3]
+
+addi x8, x0, 8
+csrrw x0, x8, (768 = 0x300)
+
+00800413
+30041073
+
+2. setting the mie register   ---> mtie = mie[7], meie = mie[11] , address of mie = 0x304 (772)
+lui  x8, 0x00880
+srli x8, x8, 12 (0x00000880)
+csrrw x0, x8, (772 = 0x304)
+00880437
+00c45413
+30441073
+
+3. setting mtvec ----> mtvec[1:0] hardwired to zero, word alligned, address 0x305
+addi x8, x0, 60 = 15*4 0x3c=60
+csrrw x0, x8, (776 = 0x305)
+
+03C00413
+30541073
+
+*****************Stall when data dependent load is followed by load statement****************
+lb x8, 10(x5)
+lw x8, 5(x8)
+00a28403
+00542403
+*****************Stall when data dependent add is followed by load statement****************
+lh x8, 10(x5)
+sub x5, x8, x3
+add x9, x8, x1
+00a29403
+403402b3
+001404b3
+*****************Flusing when branch taken****************
+beq x9,x9, 12 | beq x9,x9, 20
+add x8,x5, x6
+sub x8,x5, x3
+sll x8,x4,x1
+slt x8,x4,x3
+sltu x8,x4,x3
+xor x8, x1,x1
+srl x8, x5,x2
+sra x8, x5,x2
+or x8, x1,x2
+and x8, x2,x1
+
+00a48663 | 00948863
+00948663
+00628433
+40328433
+00121433
+00322433
+00323433
+0010c433
+0022d433
+4022d433
+0020e433
+00117433
+
+*****************Forwording to RS1****************
+***************R type (forwading from Ma stage + WB stage)
+add x8, x1, x3
+sub x5, x8, x3
+or x9, x8, x1
+00308433
+403402b3
+001464b3
+
+
+*****************I type (forwading from Ma stage + WB stage)
+add x8, x1, x3
+addi x5, x8, -1
+ori x9, x8, 1
+00308433
+fff40293
+00146493
+
+*****************U type- LUI (forwading from Ma stage + WB stage)
+lui x8, 0x87654         // x8 = 0x87654000
+addi x5, x8, -1
+or x9, x8, x1
+87654437
+fff40293
+001464b3
+
+*****************U type- AUIPC (forwading from Ma stage + WB stage)
+auipc x8, 0x87654           //x8 = pc + 0x87654
+addi x5, x8, -1
+or x9, x8, x1
+87654417   
+fff40293
+001464b3
+
+*****************No need of forwarding for J type instructions
+
+
+
+*****************R-type****************
+add x8,x5, x6
+sub x8,x5, x3
+sll x8,x4,x1
+slt x8,x4,x3
+sltu x8,x4,x3
+xor x8, x1,x1
+srl x8, x5,x2
+sra x8, x5,x2
+or x8, x1,x2
+and x8, x2,x1
+
+00628433
+40328433
+00121433
+00322433
+00323433
+0010c433
+0022d433
+4022d433
+0020e433
+00117433
+
+*****************I-type****************
+
+addi x8, x5,4
+addi x8, x10,-6
+addi x1 , x0, 10 
+slti x8, x6,2
+sltiu x8, x3,3  
+xori x8, x2,1
+ori x8,x2,1  
+andi x8, x2,1
+slli x8,x9,2
+srli x8, x8,3
+srai x8, x9,2
+
+
+00428413
+ffa50413
+00a00093
+00232413
+0031b413
+00114413
+00116413
+00117413
+00249413
+00345413
+4024d413
+
+
+
+*****************I-type (Load)****************
+lb x8, 123(x5)
+lh x8, 10(x5)
+lw x8, 10(x5)
+lbu x8, 10(x5)
+lhu x8, 10(x5)
+
+07b28403
+00a29403
+00a2a403
+00a2c403
+00a2d403
+
+*****************S type****************
+sb x15,  10(x5)
+lb x8, 10(x5)
+sh x9, 10(x5)
+lh x8, 10(x5)
+sw x15, 10(x5)
+lw x8, 10(x5)
+
+00f28523
+00a28403
+00929523
+00a29403
+00f2a523
+00a2a403
+
+
+*****************B type****************
+beq x9,x10, 12
+beq x9,x9, 12
+
+bne x10,x10,16
+bne x9,x10, 16
+
+blt x10,x9, 20
+blt x9,x10, 20
+
+bge x3,x10,16
+bge x10, x10, 16
+
+00a48663
+00948663
+
+00a51863
+00a49863
+
+00954a63
+00a4ca63
+
+00a1d863
+00a55863
+*****************J type (JALR)****************
+
+rd = pc + 4
+pc = rs1 + offset
+jalr x8, x4, 20
+01420467
+
+*****************J type (JAL)****************
+
+rd = pc + 4
+pc = pc + offset
+jal x8, 20
+0140046f
+
+
+*****************U type (LUI)****************
+lui x8, 0x87654         // x8 = 0x87654000
+addi x8, x8, 0x321      // x8 = 0xDEADAEEF
+87654437
+32140413
+
+
+lui x8, 0xDEADC        // x8 = 0xDEADC000 //Look at C
+addi x8, x8,0xEEF      // x8 =  0xDEADBEEF //Look at the position of B and C
+deadc437
+fee40413
+
+*****************U type (AUIPC)****************
+auipc x8, 0x87654           //x8 = pc + 0x87654
+87654417   
+
+//Adds upper immediate value to PC and places result in destination register
+//Used for PC-relative addressing
+
+
+
+
+*****************GCD****************
+
+0000000000000000 <_boot>:
+   0:	00a00093          	li	ra,10
+   4:	00f00113          	li	sp,15
+
+0000000000000008 :
+   8:	00208c63          	beq	ra,sp,20 
+   c:	0020c663          	blt	ra,sp,18 
+
+0000000000000010 :
+  10:	402080b3          	sub	ra,ra,sp
+  14:	0080006f          	j	8 
+
+0000000000000018 :
+  18:	40110133          	sub	sp,sp,ra
+  1c:	0080006f          	j	8 
+  
+00a00093
+00f00113
+00208c63
+0020c663
+402080b3
+0080006f
+40110133
+0080006f
+
+
+addi x8, x0, 10
+addi x9, x0, 15
+beq x8, x9, 24
+blt x8, x9, 12
+sub x8,x8,x9
+j	8 
+sub x9,x9,x8
+j	-20 
+
+00a00413
+00f00493
+00940c63
+40940433 
+00800067 
+408484B3
+00800067
