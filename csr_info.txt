@@ -1,0 +1,32 @@
+                            CSR instruction of interest
+-------------------------------> CSR instructions <-----------------------------------------
+op code = 1110011
+fun3    | Inst   | Description                     | format
+001     | CSRRW  | Automatic Read & Write          | CSRRW   rd, csr, rs1
+010     | CSRRS  | Automatic Read & Set bit        | CSRRS   rd, csr, rs1
+011     | CSRRC  | Automatic Read & Clear bit      | CSRRC   rd, csr, rs1
+101     | CSRRWI | Automatic R/W imm               | CSRRWI  rd, csr, imm
+110     | CSRRSI | Automatic Read & Set bit imm    | CSRRSI  rd, csr, imm
+111     | CSRRCI | Automatic Read & clear bit imm  | CSRRCI  rd, csr, imm
+
+CSRR (CSR read) : RD            <---- CSR ( RD = CSR_REG[CSRRW[31:20]] will be transfer to RD
+CSRW (CSR write): CSR(Register) <---- RS1 (CSR_REG[CSRRW[31:20]] = RS1
+
+-------------------------------> Register we are going to use <-----------------------------------------
+
+Address | Register | Description                 |
+0x300   | mstatus  | status register             | mie = mstatue[3]                |        | set using csrrw
+0x304   | mie      | Interupt enable register    | mtie = mie[7], meie = mie[11]   |        | set using csrrw
+0x305   | mtvec    | Trap-handler base address   | 				                   |        | set using csrrw
+0x341   | mepc     | Exception program counter   | mepc = pc_Ma + 4                | (Done) |
+0x342   | mcause   | Trap cause                  | encode using interrupt          | (Done) |
+0x344   | mip      | Interupt pending            | mtip = mip[7], meip = mip[11]   |        |
+
+2^12 = 4096 total 4096 CSR registers
+
+01000 010 CSRRS
+01000 011 CSRRC
+
+first instruction in 
+304(csr_reg=mie) 43 (RS1=8 & op_sel = 011)    073(RD= 0, op= csr)
+30043073
