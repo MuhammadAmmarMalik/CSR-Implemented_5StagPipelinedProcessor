@@ -1,0 +1,23 @@
+00800413  //| addi x8, x0, 8
+30041073  //| csrrw x0, x8, (768 = 0x300)
+00880437  //| lui  x8, 0x00880
+00c45413  //| srli x8, x8, 12 (0x00000880)
+30441073  //| csrrw x0, x8, (772 = 0x304)
+03C00413  //| addi x8, x0, 60 = 15*4 0x3c=60
+30541073  //| csrrw x0, x8, (776 = 0x305)
+00628433  //| Program instruction | add x8,x5, x6
+40328433  //| Program instruction | sub x8,x5, x3
+00121433  //| Program instruction | sll x8,x4,x1
+00322433  //| Program instruction | slt x8,x4,x3
+00323433  //| Program instruction | sltu x8,x4,x3
+0010c433  //| Program instruction | xor x8, x1,x1
+0022d433  //| Program instruction | srl x8, x5,x2
+000283EF  //| End of progrma      | simple jum to the end of program
+00000000  //| MTVEC Address       | instruction no. 16
+0140046f  //|base address + 4 (jump will lead to timer interrupt service routine) | jump to CSR jal x8, 20 | instruction no 17
+00628433  //| Program instruction | add x8,x5, x6
+40328433  //| Program instruction | sub x8,x5, x3
+00121433  //| Program instruction | sll x8,x4,x1
+00322433  //| Program instruction | slt x8,x4,x3
+0020e433  //| timer interrupt service routine | instruction no. 22
+30200073  //| MRET statement
